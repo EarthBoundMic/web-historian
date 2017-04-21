@@ -1,5 +1,6 @@
 var fs = require('fs');
 var path = require('path');
+var request = require('request');
 var _ = require('underscore');
 
 /*
@@ -46,13 +47,26 @@ exports.isUrlInList = function(url, callback) {
 };
 
 exports.addUrlToList = function(url, callback) {
-  var isInList = this.isUrlInList(url);
   
-  if (isInList === false){
-    fs.appendFile(this.paths.list, url, function() {
-      if (err) throw err
-    });
-  }
+    fs.appendFile(exports.paths.list, url + '\n', function(err, data) {
+      if (err) {
+        throw err;
+      }
+      callback()
+    })
+  
+  //console.log(JSON.stringify(callback));
+    // this.isUrlInList(url, function(bool) {
+    //   if (bool === false){
+    //     fs.appendFile(exports.paths.list, url, function(err, data) {
+    //     if (err) {
+    //       throw err;
+    //     }
+    //  });
+    // } else {
+    //   callback(true);
+    // }
+  //});
     // archive.isUrlInList(pathName, function(result) {
     //   if (result) {
     //     action(res, {url: pathName});
@@ -63,7 +77,27 @@ exports.addUrlToList = function(url, callback) {
 };
 
 exports.isUrlArchived = function(url, callback) {
+  fs.access (path.join(exports.paths.archivedSites, url), function (err) {
+    if (err) {
+      callback(false);
+    } else {
+      callback(true);
+    }
+  })
+
 };
 
 exports.downloadUrls = function(urls) {
+  //This function is intended to be run periodically through crontab 
+  //Iterate through list of URLs in sites.txt (passed in as urls)
+  //For each URL in list, it will download the HTML of the home page in each site
+  
+  urls.forEach(function(url){
+    if (url) {
+      request('http://' + url).pipe(fs.createWriteStream(exports.paths.archivedSites + '/' + url));
+    }  else {
+       return;
+    }
+  });
+
 };
